@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Notebook</title>
-    <link rel="icon" type="image/png" href="/assets/logo.png">
+    <link rel="icon" type="image/png" href="logo.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -460,11 +460,12 @@
         }
 
         /* --- Delete + PDF: each takes 50% of the row --- */
-        .actions #delBtn,
-        .actions #pdfBtn {
-            flex: 1 1 0;
-            min-width: 0;
-        }
+/* --- Delete + PDF: size to their content on desktop --- */
+.actions #delBtn,
+.actions #pdfBtn {
+    flex: 0 0 auto;
+    min-width: 0;
+}
 
         /* delete button: icon hugs the "Delete" text, both centered */
         #delBtn {
