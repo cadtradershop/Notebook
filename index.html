@@ -5,17 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Notebook</title>
-
-    <!-- ===== PWA ===== -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#b5532a">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Notebook">
-<link rel="icon" type="image/png" href="icon.png">
-<link rel="apple-touch-icon" href="icon.png">
-
+    <link rel="icon" type="image/png" href="logo.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -469,12 +459,15 @@
             min-width: 0
         }
 
-        .actions #delBtn,
-        .actions #pdfBtn {
-            flex: 0 0 auto;
-            min-width: 0;
-        }
+        /* --- Delete + PDF: each takes 50% of the row --- */
+/* --- Delete + PDF: size to their content on desktop --- */
+.actions #delBtn,
+.actions #pdfBtn {
+    flex: 0 0 auto;
+    min-width: 0;
+}
 
+        /* delete button: icon hugs the "Delete" text, both centered */
         #delBtn {
             display: inline-flex;
             align-items: center;
@@ -527,6 +520,7 @@
             opacity: 1
         }
 
+        /* custom confirm dialog (browser confirm() is blocked in many embedded views) */
         #dlg {
             position: fixed;
             inset: 0;
@@ -623,6 +617,7 @@
                 text-align: center
             }
 
+            /* keep the two buttons 50/50 on mobile too */
             .actions #delBtn,
             .actions #pdfBtn {
                 flex: 1 1 0;
@@ -715,6 +710,7 @@
         }
         function itemEl(id) { return $('list').querySelector('.item[data-id="' + id + '"]') }
 
+        // custom confirm (window.confirm is blocked in sandboxed / embedded pages)
         function askConfirm(msg) {
             return new Promise(res => {
                 $('dlgMsg').textContent = msg; $('dlg').hidden = false;
@@ -843,14 +839,17 @@
         bodyEl.addEventListener('drop', e => e.preventDefault());
         bodyEl.addEventListener('input', () => { updateEmpty(); queueSave() });
 
+        // toolbar buttons: act without stealing the text selection
         function tb(btn, fn) {
             btn.addEventListener('touchstart', e => { e.preventDefault(); fn() }, { passive: false });
             btn.addEventListener('mousedown', e => { e.preventDefault(); fn() });
             btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn() } });
         }
-        /* ---------- block helpers ---------- */
+        /* ---------- block helpers (horizontal line + bullets) ---------- */
         const isBlk = n => n && n.nodeType === 1 && /^(DIV|P|UL|OL|LI|HR)$/.test(n.nodeName);
+        // the top-level child of the editor that contains `node`
         function topOf(node) { while (node && node.parentNode !== bodyEl) node = node.parentNode; return node }
+        // wrap loose text / inline nodes sitting directly in the editor into a <div>
         function asBlock(n) {
             if (!n || isBlk(n)) return n;
             let a = n, b = n;
@@ -878,7 +877,7 @@
             if (top) top = asBlock(top);
             const hr = document.createElement('hr');
             if (!top) bodyEl.appendChild(hr);
-            else if (top.nodeName !== 'UL' && top.nodeName !== 'HR' && !top.textContent.trim()) bodyEl.replaceChild(hr, top);
+            else if (top.nodeName !== 'UL' && top.nodeName !== 'HR' && !top.textContent.trim()) bodyEl.replaceChild(hr, top); // empty line turns into the rule: no gap left
             else bodyEl.insertBefore(hr, top.nextSibling);
             let next = hr.nextSibling;
             if (!next || next.nodeName === 'HR') {
@@ -888,6 +887,7 @@
             placeCaret(next);
             updateEmpty(); queueSave();
         }
+        // Backspace on the empty line under a rule removes only that empty line (the rule stays)
         bodyEl.addEventListener('keydown', e => {
             if (e.key !== 'Backspace' || e.ctrlKey || e.metaKey || e.altKey) return;
             const s = window.getSelection();
@@ -903,6 +903,7 @@
                 updateEmpty(); queueSave();
             }
         });
+        // typing "* " or "- " at the start of a line turns it into a bullet
         bodyEl.addEventListener('input', e => {
             if (!e.inputType || e.inputType.indexOf('insert') !== 0) return;
             const s = window.getSelection();
@@ -1023,7 +1024,7 @@
             });
         }
         function open(id) {
-            if (curId && curId !== id) { clearTimeout(timer); save() }
+            if (curId && curId !== id) { clearTimeout(timer); save() }   // never lose the previous note's pending edit
             curId = id; const n = notes.find(x => x.id === id);
             $('title').value = n ? n.title : '';
             bodyEl.innerHTML = n ? noteHtml(n) : '';
@@ -1203,6 +1204,7 @@
             });
             return pages;
         }
+        // download a Blob; works in normal browsers, and falls back to opening it in a new tab
         function downloadBlob(blob, name) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1224,6 +1226,7 @@
                 pages.forEach((c, i) => { if (i) pdf.addPage(); pdf.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 595.28, 841.89) });
                 const name = ((n.title.trim() || 'note').replace(/[\\/:*?"<>|]+/g, '').slice(0, 60) || 'note') + '.pdf';
 
+                // host-provided downloader (if this page runs inside an app that offers one)
                 let dl = null;
                 try { if (typeof claude !== 'undefined' && claude && typeof claude.use === 'function') dl = await claude.use('downloads') } catch (e) { dl = null }
                 if (dl) {
@@ -1238,23 +1241,6 @@
             }
         }
         $('pdfBtn').onclick = exportPdf;
-
-        /* ---------- PWA: dynamic theme-color + service worker ---------- */
-        function updateThemeColor() {
-            const dark = document.documentElement.dataset.theme === 'dark'
-                || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme:dark)').matches);
-            const meta = document.querySelector('meta[name="theme-color"]');
-            if (meta) meta.content = dark ? '#1d1c1a' : '#b5532a';
-        }
-        updateThemeColor();
-        try { matchMedia('(prefers-color-scheme:dark)').addEventListener('change', updateThemeColor) } catch (e) { }
-
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .catch(err => console.warn('SW registration failed:', err));
-            });
-        }
 
         load();
         if (notes.length) { curId = null; renderList(); open(notes[0].id) } else newNote();
