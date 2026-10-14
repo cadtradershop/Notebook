@@ -1,10 +1,9 @@
-const CACHE = 'notebook-v1';
+const CACHE = 'notebook-v2';
 const LOCAL_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './icon.svg',
-  './icon-maskable.svg'
+  './icon.png'
 ];
 
 self.addEventListener('install', e => {
