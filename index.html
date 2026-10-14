@@ -636,7 +636,7 @@
 <body>
     <header>
         <button id="menuBtn" aria-label="Open notes menu">☰</button>
-        <h1 aria-label="Notebook"><span class="brand-theme">N</span><span class="brand-white">ote</span><span class="brand-theme">boo</span><span class="brand-white">k</span></h1>
+        <h1 aria-label="Notebook"><span class="brand-theme">N</span><span class="brand-white">ote</span><span class="brand-theme">b</span><span class="brand-white">o</span><span class="brand-theme">o</span><span class="brand-white">k</span></h1>
         <button id="newBtn" class="pri">+ New</button>
     </header>
     <main>
@@ -1044,8 +1044,7 @@
             n.html = bodyEl.innerHTML;
             n.body = bodyEl.innerText;
             n.updated = Date.now();
-            const st = $('status');
-            if (st) st.textContent = persist() ? 'Saved ✓ (on this device only)' : 'Could not save — browser storage is disabled';
+            persist();
             const el = itemEl(n.id);
             if (el) {
                 const inp = el.querySelector('.t'); if (inp.value !== n.title) inp.value = n.title;
